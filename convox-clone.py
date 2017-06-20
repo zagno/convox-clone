@@ -37,8 +37,8 @@ class ConvoxCloner():
             self.destination.get_rack_name())
         )
 
-        source_apps = self._get_app_nams_as_list(self.source)
-        destination_apps = self._get_app_nams_as_list(self.destination)
+        source_apps = self.source.apps.get()
+        destination_apps = self.destination.apps.get()
 
         self._create_apps(
             self._get_missing_apps(source_apps, destination_apps)
@@ -50,37 +50,33 @@ class ConvoxCloner():
 
     def _create_apps(self, apps):
         for app in apps:
-            self.logger.info('Creating Application {}'.format(app))
+            self.logger.info('Creating Application {}'.format(app['name']))
 
-            create = self.destination.apps.create(app)
+            create = self.destination.apps.create(app['name'])
 
             if 'error' in create:
                 self.logger.error("Error: {}" .format(create['error']))
 
     def _sync_enviroment_variables_for_apps(self, apps):
         for app in apps:
-            self.logger.info('Syncing env vars for {}'.format(app))
+            app_name = app['name']
 
-            env_vars = self.source.app(app).environment.get()
-            respone  = self.destination.app(app).environment.create(keys=env_vars)
+            self.logger.info('Syncing env vars for {}'.format(app_name))
 
-    def _get_app_nams_as_list(self, rack):
-        apps = []
-
-        for app in rack.apps.get():
-            apps.append(app['name'])
-
-        return apps
+            env_vars = self.source.app(app_name).environment.get()
+            respone  = self.destination.app(app_name).environment.create(keys=env_vars)
 
     def _get_apps_needing_updates(self, source):
         requiring_update = []
         self.logger.info('Checking if env vars for are in-sync')
 
         for app in source:
-            self.logger.debug('Checking env vars for {}'.format(app))
+            app_name = app['name']
 
-            source_env_vars      = self.source.app(app).environment.get()
-            destination_env_vars = self.destination.app(app).environment.get()
+            self.logger.debug('Checking env vars for {}'.format(app_name))
+
+            source_env_vars      = self.source.app(app_name).environment.get()
+            destination_env_vars = self.destination.app(app_name).environment.get()
 
             # Source has vars and destination does not any
             if source_env_vars and not destination_env_vars:
@@ -113,16 +109,21 @@ class ConvoxCloner():
                 continue
 
         if not requiring_update:
-            self.logger.info('All env vars are in sync')
+            self.logger.info('All app\'s env vars are in sync')
         else:
-            self.logger.info('env var updated needed for: {}'.format(requiring_update))
+            self.logger.info('Env var updated needed for some or all apps')
 
         return requiring_update
 
     def _get_missing_apps(self, source, destination):
         self.logger.info('Checking for missing applications')
 
-        missing_apps = [app for app in source if app not in destination]
+        missing_apps = [
+            source_app
+            for source_app in source
+            if source_app['name'] not in
+            [destination_app['name'] for destination_app in destination]
+        ]
 
         if not missing_apps:
             self.logger.info(
@@ -130,10 +131,10 @@ class ConvoxCloner():
             )
         else:
             self.logger.info(
-                'Missing applications found on the {} rack: {}'.format(self.destination.get_rack_name(), missing_apps)
+                'Missing applications found on the {} rack'.format(self.destination.get_rack_name())
             )
 
-        return [app for app in source if app not in destination]
+        return missing_apps
 
 class ConvoxApi:
     def __init__(self, rack, api_key,logger):

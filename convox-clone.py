@@ -46,7 +46,7 @@ class ConvoxCloner(object):
         self.build_sync   = BuildSync(self.source, self.destination, self.logger)
         self.release_sync = ReleaseSync(self.source, self.destination, self.logger)
 
-    def clone(self, app_names = None):
+    def clone(self, app_names = []):
         source_apps = []
         dest_apps   = []
         source_name = self.source.get_rack_name()
@@ -54,7 +54,7 @@ class ConvoxCloner(object):
 
         message = 'Cloning All apps from {} rack to {} rack'.format(source_name, dest_name)
 
-        for app_name in app_names:
+        for app_name in app_names or []:
             source_apps.append(self.source.app(app_name).get())
 
         if source_apps:

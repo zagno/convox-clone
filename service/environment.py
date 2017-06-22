@@ -19,7 +19,7 @@ class EnvironmentSync(object):
         """
 
         requiring_update = []
-        self.logger.info('Checking if env vars for are in-sync')
+        self.logger.info('Comparing environment vars')
 
         for app in source:
             app_name = app['name']

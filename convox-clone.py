@@ -18,7 +18,8 @@ def parse_args():
     parser.add_argument('-s', metavar='Ssurce', type=str, help='source rack', required=True)
     parser.add_argument('-d', metavar='destination', type=str, help='destination rack', required=True)
     parser.add_argument('-k', metavar='key', type=str, help='API key', required=True)
-    parser.add_argument('-v', metavar='Verbosity', type=str, help='Verbosity: INFO|DEBUG', required=False)
+    parser.add_argument('-v', metavar='Verbosity', type=str, help='Verbosity: INFO|DEBUG', default='INFO', required=False)
+    parser.add_argument('-a', metavar='application', type=str, help='Application name', nargs='*', required=False)
 
     return parser.parse_args()
 
@@ -30,7 +31,8 @@ def main():
     coloredlogs.install(level=level, logger=logger)
 
     cloner = ConvoxCloner(source=args.s, destination=args.d, api_key=args.k, logger=logger)
-    cloner.clone()
+
+    cloner.clone(args.a)
 
 class ConvoxCloner(object):
 
@@ -44,19 +46,30 @@ class ConvoxCloner(object):
         self.build_sync   = BuildSync(self.source, self.destination, self.logger)
         self.release_sync = ReleaseSync(self.source, self.destination, self.logger)
 
-    def clone(self):
-        self.logger.info('Cloning {} rack to {} rack'.format(
-            self.source.get_rack_name(),
-            self.destination.get_rack_name())
-        )
+    def clone(self, app_names = None):
+        source_apps = []
+        dest_apps   = []
+        source_name = self.source.get_rack_name()
+        dest_name   = self.destination.get_rack_name()
 
-        source_app = None
-        # source_app= [{'name': 'statflo-webapp-search', 'release': 'RHAQFUOLLEK', 'status': 'running'}]
+        message = 'Cloning All apps from {} rack to {} rack'.format(source_name, dest_name)
 
-        self.app_sync.sync(source_app)
-        self.env_sync.sync(source_app)
-        self.build_sync.sync(source_app)
-        self.release_sync.sync(source_app)
+        for app_name in app_names:
+            source_apps.append(self.source.app(app_name).get())
+
+        if source_apps:
+            message = "Cloning apps: {} from {} rack to {} rack".format(
+                ', '.join([item['name'] for item in source_apps]),
+                source_name,
+                dest_name
+            )
+
+        self.logger.info(message)
+
+        self.app_sync.sync(source_apps)
+        self.env_sync.sync(source_apps)
+        self.build_sync.sync(source_apps)
+        self.release_sync.sync(source_apps)
 
 if __name__ == '__main__':
     main()

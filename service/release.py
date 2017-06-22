@@ -21,7 +21,7 @@ class ReleaseSync(object):
         for app in apps:
             app_name = app['name']
 
-            self.logger.info('Promoting build to release for app {}'.format(app_name))
+            self.logger.info('Promoting build to release for {}.{}'.format(self.dest_rack.name(), app_name))
 
             source_build_id = self.source_rack.app(app_name).builds.active_build_id()
             release         = self.dest_rack.app(app['name']).releases.get(build_id = source_build_id)
@@ -40,7 +40,7 @@ class ReleaseSync(object):
             promote the release, on the destination, that has this build
         """
 
-        self.logger.info('Comparing build for promotion')
+        self.logger.info('Comparing builds for release promotion')
 
         requiring_promotion = []
 
@@ -50,11 +50,23 @@ class ReleaseSync(object):
             source_build_id = self.source_rack.app(app_name).builds.active_build_id()
             dest_build_id   = self.dest_rack.app(app_name).builds.active_build_id()
 
-            if not source_build_id != dest_build_id:
-                self.logger.info('Build {} is already the active build on destination'.format(source_build_id))
+            if not source_build_id:
+                self.logger.info('Build is not present on {}.{}'.format(
+                    self.source_rack.name(),
+                    app_name)
+                )
 
                 continue
 
+            if source_build_id == dest_build_id:
+                self.logger.info('Build {} is already active on {}.{}'.format(
+                    source_build_id,
+                    self.dest_rack.name(),
+                    app_name)
+                )
+
+                continue
+                
             requiring_promotion.append(app)
 
         return requiring_promotion

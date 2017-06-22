@@ -59,10 +59,7 @@ class EnvironmentSync(object):
 
                 continue
 
-        if not requiring_update:
-            self.logger.info('All app\'s env vars are in sync')
-        else:
-            self.logger.info('Env var updated needed for some or all apps')
+            self.logger.info('Environment vars are in-sync for {}.{}'.format(self.dest_rack.name(), app_name))
 
         return requiring_update
 
@@ -72,7 +69,7 @@ class EnvironmentSync(object):
         for app in apps:
             app_name = app['name']
 
-            self.logger.info('Syncing env vars for {}'.format(app_name))
+            self.logger.info('Syncing environment vars for {}.{}'.format(self.dest_rack.name(), app_name))
 
             env_vars = self.source_rack.app(app_name).environment.get()
             reponse  = self.dest_rack.app(app_name).environment.create(keys=env_vars)

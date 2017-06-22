@@ -54,6 +54,9 @@ class ConvoxRack(ConvoxBaseAPI):
     def apps(self):
         return self.apps
 
+    def name(self):
+        return self.rack
+
 class ConvoxApp(ConvoxBaseAPI):
     def __init__(self, rack, api_key, app_name, logger):
         super().__init__(rack, api_key, logger)
@@ -113,7 +116,10 @@ class ConvoxBuilds(ConvoxBaseAPI):
         self.app      = app
 
     def active_build_id(self):
-        self.logger.debug('Working out active build for app {}'.format(self.app.name()))
+        self.logger.debug('Working out active build for {}.{}'.format(
+            self.app.name(),
+            self.app.get_rack_name()
+        ))
 
         app_info = self.app.get()
 

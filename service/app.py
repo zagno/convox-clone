@@ -6,43 +6,49 @@ class AppSync(object):
         self.dest_rack   = dest_rack
         self.logger      = logger
 
-    def sync(self, source_apps=None, dest_apps=None):
-        source_apps = source_apps if source_apps else self.source_rack.apps.get()
-        dest_apps   = dest_apps if dest_apps else self.dest_rack.apps.get()
+    def sync(self, app):
+        # source_apps = source_apps if source_apps else self.source_rack.apps.get()
+
 
         self._create(
-            self._compare(source_apps, dest_apps)
+            self._compare(app)
         )
 
-    def _create(self, apps):
+    def _create(self, app):
         """ Creates apps on the destination rack """
-        for app in apps:
-            self.logger.info('Creating Application {}'.format(app['name']))
+        if not app:
+            return None
 
-            create = self.dest_rack.apps.create(app['name'])
+        app_name = app['name']
 
-            if 'error' in create:
-                self.logger.error("Error: {}" .format(create['error']))
+        self.logger.info('Creating {}.{}'.format(self.dest_rack.get_rack_name(), app_name))
 
-    def _compare(self, source, destination):
+        create = self.dest_rack.apps.create(app_name)
+
+        if 'error' in create:
+            self.logger.error("Error: {}" .format(create['error']))
+
+    def _compare(self, app):
         """ Works out which apps are missing on the destination rack """
 
-        self.logger.info('Checking for missing applications on the destination')
+        if not app:
+            return None
 
-        missing_apps = [
-            source_app
-            for source_app in source
-            if source_app['name'] not in
-            [destination_app['name'] for destination_app in destination]
-        ]
+        app_name = app['name']
 
-        if not missing_apps:
+        self.logger.info('Checking for {}.{}'.format(self.dest_rack.get_rack_name(), app_name))
+
+        destination = self.dest_rack.app(app_name).get()
+
+        if 'error' in destination:
             self.logger.info(
-                'No applications missing on the {} rack'.format(self.dest_rack.get_rack_name())
-            )
-        else:
-            self.logger.info(
-                'Missing applications found on the {} rack'.format(self.dest_rack.get_rack_name())
+                '{}.{} missing'.format(self.dest_rack.get_rack_name(), app_name)
             )
 
-        return missing_apps
+            return app
+
+        self.logger.info(
+            '{}.{} found'.format(self.dest_rack.get_rack_name(), app_name)
+        )
+
+        return None

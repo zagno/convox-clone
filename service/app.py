@@ -21,7 +21,7 @@ class AppSync(object):
 
         app_name = app['name']
 
-        self.logger.info('Creating {}.{}'.format(self.dest_rack.get_rack_name(), app_name))
+        self.logger.info('{}: Creating'.format(app_name))
 
         create = self.dest_rack.apps.create(app_name)
 
@@ -36,19 +36,19 @@ class AppSync(object):
 
         app_name = app['name']
 
-        self.logger.info('Checking for {}.{}'.format(self.dest_rack.get_rack_name(), app_name))
+        self.logger.info('{}: Checking if it exits'.format(app_name))
 
         destination = self.dest_rack.app(app_name).get()
 
         if 'error' in destination:
             self.logger.info(
-                '{}.{} missing'.format(self.dest_rack.get_rack_name(), app_name)
+                '{}: Missing on rack {}'.format(app_name, self.dest_rack.get_rack_name(),)
             )
 
             return app
 
         self.logger.info(
-            '{}.{} found'.format(self.dest_rack.get_rack_name(), app_name)
+            '{}: Found on rack {}'.format(app_name, self.dest_rack.get_rack_name())
         )
 
         return None

@@ -20,10 +20,10 @@ class EnvironmentSync(object):
 
         app_name = app['name']
         requiring_update = []
-        self.logger.info('Comparing environment vars for {}'.format(app_name))
+        self.logger.info('{}: Comparing environment variables'.format(app_name))
 
 
-        self.logger.debug('Checking env vars for {}'.format(app_name))
+        self.logger.debug('{}: Checking environment variables'.format(app_name))
 
         source_env_vars      = self.source_rack.app(app_name).environment.get()
         destination_env_vars = self.dest_rack.app(app_name).environment.get()
@@ -58,7 +58,7 @@ class EnvironmentSync(object):
 
             return None
 
-        self.logger.info('Environment vars are in-sync for {}.{}'.format(self.dest_rack.name(), app_name))
+        self.logger.info('{}: Environment variables are in-sync'.format(app_name))
 
         return requiring_update
 
@@ -70,7 +70,7 @@ class EnvironmentSync(object):
 
         app_name = app['name']
 
-        self.logger.info('Syncing environment vars for {}.{}'.format(self.dest_rack.name(), app_name))
+        self.logger.info('{}: Syncing environment variables'.format(app_name))
 
         env_vars = self.source_rack.app(app_name).environment.get()
         reponse  = self.dest_rack.app(app_name).environment.create(keys=env_vars)

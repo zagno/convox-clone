@@ -45,7 +45,7 @@ class ReleaseSync(object):
 
         app_name = app['name']
 
-        self.logger.info('Comparing build on {} for release promotion'.format(app_name))
+        self.logger.info('{}: Comparing builds for release promotion'.format(app_name))
 
         source_build_id = self.source_rack.app(app_name).builds.active_build_id()
         dest_build_id   = self.dest_rack.app(app_name).builds.active_build_id()

@@ -56,7 +56,7 @@ def main():
             'app':app
         })
 
-    with Pool(processes=5,maxtasksperchild=1) as p:
+    with Pool(processes=5,maxtasksperchild=100) as p:
         p.map(run, arguments)
 
 def run(arguments):

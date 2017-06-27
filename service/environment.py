@@ -23,9 +23,7 @@ class EnvironmentSync(SyncService):
 
         # Source has vars and destination does not any
         if source_env_vars and not destination_env_vars:
-            requiring_update.append(app)
-
-            return None
+            return app
 
         # Destination has missing vars
         missing_keys = [
@@ -35,9 +33,7 @@ class EnvironmentSync(SyncService):
         ]
 
         if missing_keys:
-            requiring_update.append(app)
-
-            return None
+            return app
 
         # If there are no missing vars then check if the values are the different
         mismatched_values = [
@@ -47,13 +43,11 @@ class EnvironmentSync(SyncService):
         ]
 
         if mismatched_values:
-            requiring_update.append(app)
-
-            return None
+            return app
 
         self._log('Environment variables are in-sync')
 
-        return requiring_update
+        return None
 
     def _sync(self, app):
         """ Copy all environment variables from the source app to the destination app """

@@ -148,17 +148,21 @@ class ConvoxBuilds(ConvoxBaseAPI):
 
         url = '{}/apps/{}/builds/{}.tgz'.format(self.api_url, self.app.name(), build_id)
 
-        r = requests.get(
-            url,
-            auth=(self.rack , self.api_key),
-            headers={'rack': self.rack},
-            stream=True
-        )
+
 
         with open(file_name, 'wb') as f:
+            r = requests.get(
+                url,
+                auth=(self.rack , self.api_key),
+                headers={'rack': self.rack},
+                stream=True
+            )
+
             for chunk in r.iter_content(chunk_size=1024):
                 if chunk:
                     f.write(chunk)
+
+            r.close()
         return
 
     def import_build(self, build_id, file_name):
@@ -173,7 +177,7 @@ class ConvoxBuilds(ConvoxBaseAPI):
             headers={'rack': self.rack},
             stream=True
         )
-        
+
 
 class ConvoxReleases(ConvoxBaseAPI):
     def __init__(self, rack, api_key, logger, app):

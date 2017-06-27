@@ -1,15 +1,11 @@
+from service.sync import SyncService
 
+class EnvironmentSync(SyncService):
 
-class EnvironmentSync(object):
-    def __init__(self, source_rack, dest_rack, logger):
-        self.source_rack = source_rack
-        self.dest_rack   = dest_rack
-        self.logger      = logger
+    def sync(self, app):
+        self.app_name = app['name']
 
-    def sync(self, source_apps=None):
-        source_apps = source_apps if source_apps else self.source_rack.apps.get()
-
-        self._sync(self._compare(source_apps))
+        self._sync(self._compare(app))
 
     def _compare(self, app):
         """ Check if the environment variables on the destination are missing,
@@ -18,15 +14,12 @@ class EnvironmentSync(object):
         if not app:
             return
 
-        app_name = app['name']
         requiring_update = []
-        self.logger.info('{}: Comparing environment variables'.format(app_name))
 
+        self._log('Comparing environment variables')
 
-        self.logger.debug('{}: Checking environment variables'.format(app_name))
-
-        source_env_vars      = self.source_rack.app(app_name).environment.get()
-        destination_env_vars = self.dest_rack.app(app_name).environment.get()
+        source_env_vars      = self.source_rack.app(self.app_name).environment.get()
+        destination_env_vars = self.dest_rack.app(self.app_name).environment.get()
 
         # Source has vars and destination does not any
         if source_env_vars and not destination_env_vars:
@@ -58,7 +51,7 @@ class EnvironmentSync(object):
 
             return None
 
-        self.logger.info('{}: Environment variables are in-sync'.format(app_name))
+        self._log('Environment variables are in-sync')
 
         return requiring_update
 
@@ -68,9 +61,7 @@ class EnvironmentSync(object):
         if not app:
             return
 
-        app_name = app['name']
+        self._log('Syncing environment variables')
 
-        self.logger.info('{}: Syncing environment variables'.format(app_name))
-
-        env_vars = self.source_rack.app(app_name).environment.get()
-        reponse  = self.dest_rack.app(app_name).environment.create(keys=env_vars)
+        env_vars = self.source_rack.app(self.app_name).environment.get()
+        reponse  = self.dest_rack.app(self.app_name).environment.create(keys=env_vars)

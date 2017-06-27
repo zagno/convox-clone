@@ -1,12 +1,11 @@
 import os
+from service.sync import SyncService
 
-class BuildSync(object):
-    def __init__(self, source_rack, dest_rack, logger):
-        self.source_rack = source_rack
-        self.dest_rack   = dest_rack
-        self.logger      = logger
+class BuildSync(SyncService):
+    
+    def sync(self, app):
+        self.app_name = app['name']
 
-    def sync(self, app=None):
         self._sync(
             self._compare(app)
         )
@@ -16,15 +15,13 @@ class BuildSync(object):
         if not app:
             return
 
-        app_name = app['name']
+        self._log('Syncing build')
 
-        self.logger.info('{}: Syncing build'.format(app_name))
-
-        active_build_id = self.source_rack.app(app_name).builds.active_build_id()
+        active_build_id = self.source_rack.app(self.app_name).builds.active_build_id()
         tmp_file        = '/tmp/{}.tgz'.format(active_build_id)
 
-        self.source_rack.app(app_name).builds.export_build(active_build_id, tmp_file)
-        self.dest_rack.app(app_name).builds.import_build(active_build_id, tmp_file)
+        self.source_rack.app(self.app_name).builds.export_build(active_build_id, tmp_file)
+        self.dest_rack.app(self.app_name).builds.import_build(active_build_id, tmp_file)
         os.remove(tmp_file)
 
         return app
@@ -35,31 +32,21 @@ class BuildSync(object):
         if not app:
             return
 
-        app_name = app['name']
+        self._log('Comparing build')
 
-        self.logger.info('{}: Comparing build'.format(app_name))
-
-        source_build_id = self.source_rack.app(app_name).builds.active_build_id()
+        source_build_id = self.source_rack.app(self.app_name).builds.active_build_id()
 
         if not source_build_id:
             return None
 
         #check if this build already exists on the dest rack
-        dest_build = self.dest_rack.app(app_name).builds.get(source_build_id)
+        dest_build = self.dest_rack.app(self.app_name).builds.get(source_build_id)
 
         if dest_build and 'error' not in dest_build:
-            self.logger.info('{}: Build {} exists on {}'.format(
-                app_name,
-                source_build_id,
-                self.dest_rack.name(),
-            ))
+            self._log('Build {} exists'.format(source_build_id))
 
             return None
 
-        self.logger.info('{}: Build {} not found on {}'.format(
-            app_name,
-            source_build_id,
-            self.dest_rack.name(),
-        ))
+        self._log('Build {} not found'.format(source_build_id))
 
         return app

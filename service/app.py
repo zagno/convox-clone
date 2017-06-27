@@ -1,14 +1,9 @@
+from service.sync import SyncService
 
-
-class AppSync(object):
-    def __init__(self, source_rack, dest_rack, logger):
-        self.source_rack = source_rack
-        self.dest_rack   = dest_rack
-        self.logger      = logger
+class AppSync(SyncService):
 
     def sync(self, app):
-        # source_apps = source_apps if source_apps else self.source_rack.apps.get()
-
+        self.app_name = app['name']
 
         self._create(
             self._compare(app)
@@ -19,11 +14,9 @@ class AppSync(object):
         if not app:
             return None
 
-        app_name = app['name']
+        self._log('Creating')
 
-        self.logger.info('{}: Creating'.format(app_name))
-
-        create = self.dest_rack.apps.create(app_name)
+        create = self.dest_rack.apps.create(self.app_name)
 
         if 'error' in create:
             self.logger.error("Error: {}" .format(create['error']))
@@ -34,21 +27,15 @@ class AppSync(object):
         if not app:
             return None
 
-        app_name = app['name']
+        self._log('Checking if app exists')
 
-        self.logger.info('{}: Checking if app exists on rack {}'.format(app_name, self.dest_rack.get_rack_name()))
-
-        destination = self.dest_rack.app(app_name).get()
+        destination = self.dest_rack.app(self.app_name).get()
 
         if 'error' in destination:
-            self.logger.info(
-                '{}: Missing app on rack {}'.format(app_name, self.dest_rack.get_rack_name())
-            )
+            self._log('Missing app')
 
             return app
 
-        self.logger.info(
-            '{}: Found app on rack {}'.format(app_name, self.dest_rack.get_rack_name())
-        )
+        self._log('Found app')
 
         return None

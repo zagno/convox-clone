@@ -23,8 +23,6 @@ class ReleaseSync(object):
 
         app_name = app['name']
 
-        self.logger.info('{}: Promoting build to release'.format(app_name))
-
         source_build_id = self.source_rack.app(app_name).builds.active_build_id()
         release         = self.dest_rack.app(app['name']).releases.get(build_id = source_build_id)
 
@@ -32,6 +30,8 @@ class ReleaseSync(object):
             return None
 
         release_id = release[0]['id']
+
+        self.logger.info('{}: Promoting build {} to release on rack {}'.format(app_name, source_build_id, self.dest_rack.name()))
 
         self.dest_rack.app(app_name).releases.promote(release_id)
 
@@ -45,13 +45,13 @@ class ReleaseSync(object):
 
         app_name = app['name']
 
-        self.logger.info('{}: Comparing builds for release promotion'.format(app_name))
+        self.logger.info('{}: Comparing build for release promotion'.format(app_name))
 
         source_build_id = self.source_rack.app(app_name).builds.active_build_id()
         dest_build_id   = self.dest_rack.app(app_name).builds.active_build_id()
 
         if not source_build_id:
-            self.logger.info('{}: Build is not present on {} rack'.format(
+            self.logger.info('{}: No active build on {} rack'.format(
                 app_name,
                 self.source_rack.name(),
                 )

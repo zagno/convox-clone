@@ -36,19 +36,19 @@ class AppSync(object):
 
         app_name = app['name']
 
-        self.logger.info('{}: Checking if it exits'.format(app_name))
+        self.logger.info('{}: Checking if app exists on rack {}'.format(app_name, self.dest_rack.get_rack_name()))
 
         destination = self.dest_rack.app(app_name).get()
 
         if 'error' in destination:
             self.logger.info(
-                '{}: Missing on rack {}'.format(app_name, self.dest_rack.get_rack_name(),)
+                '{}: Missing app on rack {}'.format(app_name, self.dest_rack.get_rack_name())
             )
 
             return app
 
         self.logger.info(
-            '{}: Found on rack {}'.format(app_name, self.dest_rack.get_rack_name())
+            '{}: Found app on rack {}'.format(app_name, self.dest_rack.get_rack_name())
         )
 
         return None

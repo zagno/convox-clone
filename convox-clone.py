@@ -11,7 +11,6 @@ from service.app import AppSync
 from service.environment import EnvironmentSync
 from service.build import BuildSync
 from service.release import ReleaseSync
-
 from multiprocessing import Pool
 
 def parse_args():
@@ -57,7 +56,7 @@ def main():
             'app':app
         })
 
-    with Pool(5) as p:
+    with Pool(processes=5,maxtasksperchild=1) as p:
         p.map(run, arguments)
 
 def run(arguments):
@@ -91,7 +90,6 @@ class ConvoxCloner(object):
         self.env_sync.sync(self.app)
         self.build_sync.sync(self.app)
         self.release_sync.sync(self.app)
-
 
 if __name__ == '__main__':
     main()

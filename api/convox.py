@@ -192,6 +192,9 @@ class ConvoxReleases(ConvoxBaseAPI):
         else:
             data = self._get('/apps/{}/releases/{}'.format(self.app.name(), release_id))
 
+        if not data:
+            return None
+
         if not build_id:
             return data
 
@@ -205,7 +208,6 @@ class ConvoxReleases(ConvoxBaseAPI):
         self.logger.debug('Promoting release {} for app {} on rack {}'.format(release_id, self.app.name(), self.rack))
 
         return self._post('/apps/{}/releases/{}/promote'.format(self.app.name(), release_id))
-
 
     def latest(self):
         releases = self.get()

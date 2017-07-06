@@ -11,9 +11,9 @@ Clones apps from one rack
 
 optional arguments:
   -h, --help            show this help message and exit
-  -s Ssurce             source rack
-  -d destination        destination rack
-  -k key                API key
-  -v Verbosity          Verbosity: INFO|DEBUG
+  -s source             source rack (required)
+  -d destination        destination rack (required)
+  -k key                API key (required)
+  -v verbosity          Verbosity: INFO|DEBUG
   -a [application [application ...]] Application name
  ```

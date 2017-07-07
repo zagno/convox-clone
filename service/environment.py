@@ -1,75 +1,61 @@
+from service.sync import SyncService
 
+class EnvironmentSync(SyncService):
 
-class EnvironmentSync(object):
-    def __init__(self, source_rack, dest_rack, logger):
-        self.source_rack = source_rack
-        self.dest_rack   = dest_rack
-        self.logger      = logger
+    def sync(self, app):
+        self.app_name = app['name']
 
-    def sync(self, source_apps=None):
-        source_apps = source_apps if source_apps else self.source_rack.apps.get()
+        self._sync(self._compare(app))
 
-        requiring_update = self._compare(source_apps)
-
-        self._sync(requiring_update)
-
-    def _compare(self, source):
+    def _compare(self, app):
         """ Check if the environment variables on the destination are missing,
         incomplete or the values are different from the source variables
         """
+        if not app:
+            return
 
         requiring_update = []
-        self.logger.info('Comparing environment vars')
 
-        for app in source:
-            app_name = app['name']
+        self._log('Comparing environment variables')
 
-            self.logger.debug('Checking env vars for {}'.format(app_name))
+        source_env_vars      = self.source_rack.app(self.app_name).environment.get()
+        destination_env_vars = self.dest_rack.app(self.app_name).environment.get()
 
-            source_env_vars      = self.source_rack.app(app_name).environment.get()
-            destination_env_vars = self.dest_rack.app(app_name).environment.get()
+        # Source has vars and destination does not any
+        if source_env_vars and not destination_env_vars:
+            return app
 
-            # Source has vars and destination does not any
-            if source_env_vars and not destination_env_vars:
-                requiring_update.append(app)
+        # Destination has missing vars
+        missing_keys = [
+            key
+            for key in source_env_vars.keys()
+            if key not in destination_env_vars
+        ]
 
-                continue
+        if missing_keys:
+            return app
 
-            # Destination has missing vars
-            missing_keys = [
-                key
-                for key in source_env_vars.keys()
-                if key not in destination_env_vars
-            ]
+        # If there are no missing vars then check if the values are the different
+        mismatched_values = [
+            key
+            for key in source_env_vars.keys()
+            if source_env_vars[key] != destination_env_vars[key]
+        ]
 
-            if missing_keys:
-                requiring_update.append(app)
+        if mismatched_values:
+            return app
 
-                continue
+        self._log('Environment variables are in-sync')
 
-            # If there are no missing vars then check if the values are the different
-            mismatched_values = [
-                key
-                for key in source_env_vars.keys()
-                if source_env_vars[key] != destination_env_vars[key]
-            ]
+        return None
 
-            if mismatched_values:
-                requiring_update.append(app)
-
-                continue
-
-            self.logger.info('Environment vars are in-sync for {}.{}'.format(self.dest_rack.name(), app_name))
-
-        return requiring_update
-
-    def _sync(self, apps):
+    def _sync(self, app):
         """ Copy all environment variables from the source app to the destination app """
 
-        for app in apps:
-            app_name = app['name']
+        if not app:
+            return
 
-            self.logger.info('Syncing environment vars for {}.{}'.format(self.dest_rack.name(), app_name))
+        self._log('Syncing environment variables')
 
-            env_vars = self.source_rack.app(app_name).environment.get()
-            reponse  = self.dest_rack.app(app_name).environment.create(keys=env_vars)
+        env_vars = self.source_rack.app(self.app_name).environment.get()
+        reponse  = self.dest_rack.app(self.app_name).environment.create(keys=env_vars)

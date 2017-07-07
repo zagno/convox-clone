@@ -1,72 +1,53 @@
+from service.sync import SyncService
 
+class ReleaseSync(SyncService):
 
-class ReleaseSync(object):
-    def __init__(self, source_rack, dest_rack, logger):
-        self.source_rack = source_rack
-        self.dest_rack   = dest_rack
-        self.logger      = logger
+    def sync(self, app):
+        self.app_name = app['name']
 
-    def sync(self, source_apps=None):
-        source_apps = source_apps if source_apps else self.source_rack.apps.get()
+        self._sync(self._compare(app))
 
-        requiring_update = self._compare(source_apps)
-
-        self._sync(requiring_update)
-
-    def _sync(self, apps):
+    def _sync(self, app):
         """ Promote the release on the destination rack
             that has the same active build from the source rack
         """
 
-        for app in apps:
-            app_name = app['name']
+        if not app:
+            return None
 
-            self.logger.info('Promoting build to release for {}.{}'.format(self.dest_rack.name(), app_name))
+        source_build_id = self.source_rack.app(self.app_name).builds.active_build_id()
+        release         = self.dest_rack.app(self.app_name).releases.get(build_id = source_build_id)
 
-            source_build_id = self.source_rack.app(app_name).builds.active_build_id()
-            release         = self.dest_rack.app(app['name']).releases.get(build_id = source_build_id)
+        if not release:
+            return None
 
-            if not release:
-                continue
+        release_id = release[0]['id']
 
-            release_id = release[0]['id']
+        self._log('Promoting build {} to release'.format(source_build_id))
 
-            self.dest_rack.app(app_name).releases.promote(release_id)
+        self.dest_rack.app(self.app_name).releases.promote(release_id)
 
-        return apps
-
-    def _compare(self, apps):
+    def _compare(self, app):
         """ Compare build ids for active releases and if they're not the same then
             promote the release, on the destination, that has this build
         """
 
-        self.logger.info('Comparing builds for release promotion')
+        if not app:
+            return None
 
-        requiring_promotion = []
+        self._log('Comparing build for release promotion')
 
-        for app in apps:
-            app_name = app['name']
+        source_build_id = self.source_rack.app(self.app_name).builds.active_build_id()
+        dest_build_id   = self.dest_rack.app(self.app_name).builds.active_build_id()
 
-            source_build_id = self.source_rack.app(app_name).builds.active_build_id()
-            dest_build_id   = self.dest_rack.app(app_name).builds.active_build_id()
+        if not source_build_id:
+            self._log('No active build')
 
-            if not source_build_id:
-                self.logger.info('Build is not present on {}.{}'.format(
-                    self.source_rack.name(),
-                    app_name)
-                )
+            return None
 
-                continue
+        if source_build_id == dest_build_id:
+            self._log('Build {} is already active'.format(source_build_id))
 
-            if source_build_id == dest_build_id:
-                self.logger.info('Build {} is already active on {}.{}'.format(
-                    source_build_id,
-                    self.dest_rack.name(),
-                    app_name)
-                )
+            return None
 
-                continue
-                
-            requiring_promotion.append(app)
-
-        return requiring_promotion
+        return app

@@ -1,6 +1,7 @@
 import requests
 from requests.auth import HTTPBasicAuth
 from threading import Thread
+from pprint import pprint
 
 class ConvoxBaseAPI(object):
     def __init__(self, rack, api_key, logger):
@@ -147,21 +148,21 @@ class ConvoxBuilds(ConvoxBaseAPI):
 
         url = '{}/apps/{}/builds/{}.tgz'.format(self.api_url, self.app.name(), build_id)
 
-        # worker = DownloadWorker(self.rack, self.api_key, self.logger, url, file_name)
-        # # Setting daemon to True will let the main thread exit even though the workers are blocking
-        # worker.daemon = True
-        # worker.start()
 
-        r = requests.get(
-            url,
-            auth=(self.rack , self.api_key),
-            headers={'rack': self.rack},
-            stream=True
-        )
+
         with open(file_name, 'wb') as f:
+            r = requests.get(
+                url,
+                auth=(self.rack , self.api_key),
+                headers={'rack': self.rack},
+                stream=True
+            )
+
             for chunk in r.iter_content(chunk_size=1024):
                 if chunk:
                     f.write(chunk)
+
+            r.close()
         return
 
     def import_build(self, build_id, file_name):
@@ -177,30 +178,6 @@ class ConvoxBuilds(ConvoxBaseAPI):
             stream=True
         )
 
-class DownloadWorker(Thread):
-   def __init__(self, rack, api_key, logger, url, file_name):
-       Thread.__init__(self)
-
-       self.rack      = rack
-       self.api_key   = api_key
-       self.logger    = logger
-       self.url       = url
-       self.file_name = file_name
-
-   def run(self):
-       self.logger.debug('Retrieving url {} and saving to {}'.format(self.url, self.file_name))
-
-       r = requests.get(
-           self.url,
-           auth=(self.rack , self.api_key),
-           headers={'rack': self.rack},
-           stream=True
-       )
-       with open(self.file_name, 'wb') as f:
-           for chunk in r.iter_content(chunk_size=1024):
-               if chunk:
-                   f.write(chunk)
-       return
 
 class ConvoxReleases(ConvoxBaseAPI):
     def __init__(self, rack, api_key, logger, app):
@@ -215,13 +192,11 @@ class ConvoxReleases(ConvoxBaseAPI):
         else:
             data = self._get('/apps/{}/releases/{}'.format(self.app.name(), release_id))
 
+        if not data:
+            return None
+
         if not build_id:
             return data
-
-        # from pprint import pprint
-        # pprint(data)
-        #
-        # build_id= 'BERUXODYJVL'
 
         return [
             item
@@ -229,13 +204,10 @@ class ConvoxReleases(ConvoxBaseAPI):
             if 'build' in item and item['build'] == build_id
         ]
 
-
-
     def promote(self, release_id):
         self.logger.debug('Promoting release {} for app {} on rack {}'.format(release_id, self.app.name(), self.rack))
 
         return self._post('/apps/{}/releases/{}/promote'.format(self.app.name(), release_id))
-
 
     def latest(self):
         releases = self.get()

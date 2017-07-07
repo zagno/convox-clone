@@ -11,6 +11,7 @@ from service.app import AppSync
 from service.environment import EnvironmentSync
 from service.build import BuildSync
 from service.release import ReleaseSync
+from multiprocessing import Pool
 
 def parse_args():
     parser = argparse.ArgumentParser(description='Clones apps from one rack ')
@@ -30,46 +31,65 @@ def main():
 
     coloredlogs.install(level=level, logger=logger)
 
-    cloner = ConvoxCloner(source=args.s, destination=args.d, api_key=args.k, logger=logger)
+    apps      =[]
+    arguments = []
+    source    = ConvoxRack(args.s, args.k, logger)
 
-    cloner.clone(args.a)
+    if args.a:
+        for app in args.a:
+            apps.append(source.app(app).get())
+    else:
+        apps = source.apps.get()
+
+    if apps:
+        logger.info("Cloning apps: {} from {} rack to {} rack".format(
+            ', '.join([item['name'] for item in apps]),
+            args.s,
+            args.d
+        ))
+
+    for app in apps:
+        arguments.append({
+            'source' : args.s,
+            'destination': args.d,
+            'api_key': args.k,
+            'app':app
+        })
+
+    with Pool(processes=5,maxtasksperchild=100) as p:
+        p.map(run, arguments)
+
+def run(arguments):
+    logger = logging.getLogger('convox-cloner')
+    # level  = args.v.upper() if not None else 'INFO'
+    level ='DEBUG'
+
+    coloredlogs.install(level=level, logger=logger)
+
+    cloner = ConvoxCloner(**arguments, logger=logger)
+    cloner.clone()
 
 class ConvoxCloner(object):
 
-    def __init__(self, source, destination, api_key, logger):
+    def __init__(self, source, destination, api_key, logger, app=None):
         self.source      = ConvoxRack(source, api_key, logger)
         self.destination = ConvoxRack(destination, api_key, logger)
         self.logger      = logger
+        self.app         = app
 
         self.app_sync     = AppSync(self.source, self.destination, self.logger)
         self.env_sync     = EnvironmentSync(self.source, self.destination, self.logger)
         self.build_sync   = BuildSync(self.source, self.destination, self.logger)
         self.release_sync = ReleaseSync(self.source, self.destination, self.logger)
 
-    def clone(self, app_names = []):
-        source_apps = []
-        dest_apps   = []
+    def clone(self):
         source_name = self.source.get_rack_name()
         dest_name   = self.destination.get_rack_name()
 
-        message = 'Cloning All apps from {} rack to {} rack'.format(source_name, dest_name)
-
-        for app_name in app_names or []:
-            source_apps.append(self.source.app(app_name).get())
-
-        if source_apps:
-            message = "Cloning apps: {} from {} rack to {} rack".format(
-                ', '.join([item['name'] for item in source_apps]),
-                source_name,
-                dest_name
-            )
-
-        self.logger.info(message)
-
-        self.app_sync.sync(source_apps)
-        self.env_sync.sync(source_apps)
-        self.build_sync.sync(source_apps)
-        self.release_sync.sync(source_apps)
+        self.app_sync.sync(self.app)
+        self.env_sync.sync(self.app)
+        self.build_sync.sync(self.app)
+        self.release_sync.sync(self.app)
 
 if __name__ == '__main__':
     main()

@@ -66,6 +66,7 @@ class ConvoxApp(ConvoxBaseAPI):
         self.environment = ConvoxEnvironment(rack, api_key, logger, app=self)
         self.builds      = ConvoxBuilds(rack, api_key, logger, app=self)
         self.releases    = ConvoxReleases(rack, api_key, logger, app=self)
+        self.formations  = ConvoxFormation(rack, api_key, logger, app=self)
 
     def get(self):
         return self._get('/apps/{}'.format(self.app_name))
@@ -224,3 +225,30 @@ class ConvoxReleases(ConvoxBaseAPI):
             return None
 
         return release['id']
+
+
+class ConvoxFormation(ConvoxBaseAPI):
+    def __init__(self, rack, api_key, logger, app):
+        super().__init__(rack, api_key, logger)
+
+        self.logger   = logger
+        self.app      = app
+
+    def get(self, release_id=None, build_id=None):
+        data = self._get('/apps/{}/formation'.format(self.app.name()))
+
+        if not data:
+            return None
+
+        return data
+
+    def scale(self, process_name, count=0, memory=0):
+        self.logger.debug('Scaling process {} ({}, {}MB) for app {} on rack {}'.format(process_name, count, memory, self.app.name(), self.rack))
+
+        return self._post(
+            '/apps/{}/formation/{}'.format(self.app.name(),process_name),
+            {
+                'count': count,
+                'memory': memory
+            }
+        )

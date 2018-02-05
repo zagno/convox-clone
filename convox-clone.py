@@ -12,10 +12,14 @@ from service.app import AppSync
 from service.environment import EnvironmentSync
 from service.build import BuildSync
 from service.release import ReleaseSync
+from service.formation import FormationSync
 from multiprocessing import Pool
 
 
 def _find_replace_to_dict(fr_string_list):
+    if not fr_string_list:
+        return None
+
     fr_dict = {}
 
     for item in fr_string_list:
@@ -34,6 +38,7 @@ def parse_args():
     parser.add_argument('-v', metavar='Verbosity', type=str, help='Verbosity: INFO|DEBUG', default='INFO', required=False)
     parser.add_argument('-a', metavar='application', type=str, help='Application name', nargs='*', required=False)
     parser.add_argument('-r', metavar='replace', type=str, help='Find and replace environment variable values e.g. -r find1:replace1 find2:replace2', nargs='*', required=False)
+
 
     return parser.parse_args()
 
@@ -67,6 +72,7 @@ def main():
             'destination': args.d,
             'api_key': args.k,
             'app':app,
+            'zero_out_count': True,
             'find_replace': _find_replace_to_dict(args.r)
         })
 
@@ -85,23 +91,28 @@ def run(arguments):
 
 class ConvoxCloner(object):
 
-    def __init__(self, source, destination, api_key, logger, app=None, find_replace=None):
+    def __init__(self, source, destination, api_key, logger, app=None, zero_out_count=False, find_replace=None):
         self.source       = ConvoxRack(source, api_key, logger)
         self.destination  = ConvoxRack(destination, api_key, logger)
         self.logger       = logger
         self.app          = app
         self.find_replace = find_replace
+        self.zero_out_count   = zero_out_count
 
-        self.app_sync     = AppSync(self.source, self.destination, self.logger)
-        self.env_sync     = EnvironmentSync(self.source, self.destination, self.logger)
-        self.build_sync   = BuildSync(self.source, self.destination, self.logger)
-        self.release_sync = ReleaseSync(self.source, self.destination, self.logger)
+        self.app_sync       = AppSync(self.source, self.destination, self.logger)
+        self.env_sync       = EnvironmentSync(self.source, self.destination, self.logger)
+        self.build_sync     = BuildSync(self.source, self.destination, self.logger)
+        self.release_sync   = ReleaseSync(self.source, self.destination, self.logger)
+        self.formation_sync = FormationSync(self.source, self.destination, self.logger)
 
     def clone(self):
         source_name = self.source.get_rack_name()
         dest_name   = self.destination.get_rack_name()
 
+
         self.app_sync.sync(self.app)
+        time.sleep(5)
+        self.formation_sync.sync(self.app, self.zero_out_count)
         time.sleep(5)
         self.env_sync.sync(self.app, self.find_replace)
         time.sleep(5)

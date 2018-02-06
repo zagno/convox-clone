@@ -18,11 +18,14 @@ class FormationSync(SyncService):
         source_formations = self.source_rack.app(self.app_name).formations.get()
 
         for source_formation in source_formations:
-            self.dest_rack.app(self.app_name).formations.scale(
+            result = self.dest_rack.app(self.app_name).formations.scale(
                 process_name = source_formation['name'],
                 count        = 0 if zero_out_count else source_formation['count'],
                 memory       = source_formation['memory']
             )
+
+            self._log(result)
+
 
         return
 

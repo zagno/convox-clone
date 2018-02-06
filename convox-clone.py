@@ -92,12 +92,12 @@ def run(arguments):
 class ConvoxCloner(object):
 
     def __init__(self, source, destination, api_key, logger, app=None, zero_out_count=False, find_replace=None):
-        self.source       = ConvoxRack(source, api_key, logger)
-        self.destination  = ConvoxRack(destination, api_key, logger)
-        self.logger       = logger
-        self.app          = app
-        self.find_replace = find_replace
-        self.zero_out_count   = zero_out_count
+        self.source         = ConvoxRack(source, api_key, logger)
+        self.destination    = ConvoxRack(destination, api_key, logger)
+        self.logger         = logger
+        self.app            = app
+        self.find_replace   = find_replace
+        self.zero_out_count = zero_out_count
 
         self.app_sync       = AppSync(self.source, self.destination, self.logger)
         self.env_sync       = EnvironmentSync(self.source, self.destination, self.logger)
@@ -109,16 +109,15 @@ class ConvoxCloner(object):
         source_name = self.source.get_rack_name()
         dest_name   = self.destination.get_rack_name()
 
-
         self.app_sync.sync(self.app)
-        time.sleep(5)
-        self.formation_sync.sync(self.app, self.zero_out_count)
         time.sleep(5)
         self.env_sync.sync(self.app, self.find_replace)
         time.sleep(5)
         self.build_sync.sync(self.app)
         time.sleep(5)
         self.release_sync.sync(self.app)
+        time.sleep(5)
+        self.formation_sync.sync(self.app, self.zero_out_count)
 
 if __name__ == '__main__':
     main()
